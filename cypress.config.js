@@ -36,9 +36,13 @@ export default defineConfig({
     },
   },
 
-  env: {
-    URL: "https://appuat.franciscanecare.net/Login/Identifier?SchCode=DEMOIN",
-    IDCARD_URL: "https://idcarduat.franciscanecare.net",
-  }
+env: {
+  URL: "https://appuat.franciscanecare.net/Login/Identifier?SchCode=DEMOIN",
+  IDCARD_URL: "https://idcarduat.franciscanecare.net",
+},
 
+reporter: 'junit',
+reporterOptions: {
+  mochaFile: 'cypress/results/results-[hash].xml'
+}
 });

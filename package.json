@@ -1,0 +1,27 @@
+{
+  "name": "icardautomation",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress run",
+    "test:headed": "cypress run --headed",
+    "test:open": "cypress open"
+  },
+  "devDependencies": {
+    "@4tw/cypress-drag-drop": "^2.3.1",
+    "@shelex/cypress-allure-plugin": "^2.41.2",
+    "allure-commandline": "^2.36.0",
+    "cypress": "^15.7.0",
+    "cypress-file-upload": "^5.0.8",
+    "cypress-mochawesome-reporter": "^3.8.4",
+    "cypress-real-events": "^1.15.0",
+    "cypress-xpath": "^2.0.1",
+    "marge": "^1.0.1",
+    "mochawesome": "^7.1.4",
+    "mochawesome-merge": "^4.4.1"
+  }
+}

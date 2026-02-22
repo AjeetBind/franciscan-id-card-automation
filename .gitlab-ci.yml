@@ -1,0 +1,127 @@
+default:
+  tags:
+    - FSPL_Automation
+  before_script:
+    - powershell.exe -Command "Write-Host 'Using PowerShell Shell'"
+
+stages:
+  - test
+  - report
+
+run_tests:
+  stage: test
+  script:
+    - powershell.exe -Command "git config --global core.longpaths true"
+
+    # ---------------------------
+    # Detect Node.js Installation
+    # ---------------------------
+    - powershell.exe -Command |
+        Write-Host "Checking for Node.js installation...";
+        $nodePaths = @(
+            'C:\\Program Files\\nodejs',
+            'C:\\Program Files (x86)\\nodejs',
+            'C:\\nodejs'
+        );
+        $nodePathFound = $false;
+
+        foreach ($path in $nodePaths) {
+            if (Test-Path "$path\\node.exe") {
+                Write-Host "Found Node.js at $path";
+                $env:PATH = "$path;$env:PATH";
+                $nodePathFound = $true;
+                break;
+            }
+        }
+
+        if (-not $nodePathFound) {
+            Write-Host "ERROR is Node.js not found. Install Node.js or update path.";
+            exit 1;
+        }
+
+    # ---------------------------
+    # Verify Node & NPM Versions
+    # ---------------------------
+    - powershell.exe -Command "Write-Host 'Node Version:'; node --version"
+    - powershell.exe -Command "Write-Host 'NPM Version:'; npm --version"
+
+    # ---------------------------
+    # Install Cypress dependencies
+    # ---------------------------
+    - powershell.exe -Command "npm cache clean --force"
+    - powershell.exe -Command "npm ci"
+
+    # ---------------------------
+    # Run Cypress Test File
+    # ---------------------------
+    - powershell.exe -Command "npx cypress run --spec 'cypress/e2e/tests.cy.js'"
+
+  artifacts:
+    when: always
+    paths:
+      - cypress/videos/
+      - cypress/screenshots/
+      - cypress/reports/
+      - cypress/downloads/
+    expire_in: 2 days
+
+# =======================================================
+#                REPORT UPLOAD STAGE
+# =======================================================
+
+upload_report:
+  stage: report
+  dependencies:
+    - run_tests
+  script:
+
+    # ---------------------------
+    # Create Timestamped Folder
+    # ---------------------------
+    - powershell.exe -Command |
+        $DATE_FOLDER = (Get-Date -Format 'yyyy-MM-dd_HH-mm');
+        $REPORT_ROOT = 'C:\\FSPL_automation\\automation_test_report';
+
+        if (!(Test-Path $REPORT_ROOT)) {
+            Write-Host 'Creating root report directory...';
+            New-Item -ItemType Directory -Path $REPORT_ROOT | Out-Null;
+        }
+
+        $REPORT_DIR = "$REPORT_ROOT\\$DATE_FOLDER";
+        Write-Host "Creating report folder at $REPORT_DIR";
+        New-Item -ItemType Directory -Path $REPORT_DIR -Force | Out-Null;
+
+    # ---------------------------
+    # Copy Test Results
+    # ---------------------------
+    - powershell.exe -Command |
+        Write-Host 'Copying test results...';
+        if (Test-Path 'cypress/results') {
+            $DATE_FOLDER = (Get-Date -Format 'yyyy-MM-dd_HH-mm');
+            $REPORT_ROOT = 'C:\\FSPL_automation\\automation_test_report';
+            $REPORT_DIR = "$REPORT_ROOT\\$DATE_FOLDER";
+
+            Copy-Item -Path 'cypress/results/*' -Destination $REPORT_DIR -Recurse -Force -ErrorAction SilentlyContinue;
+        } else {
+            Write-Host 'No results directory found.';
+        }
+
+    # ---------------------------
+    # Copy Screenshots (if exist)
+    # ---------------------------
+    - powershell.exe -Command |
+        Write-Host 'Checking for screenshots...';
+        if (Test-Path 'cypress/ss') {
+
+            $DATE_FOLDER = (Get-Date -Format 'yyyy-MM-dd_HH-mm');
+            $REPORT_ROOT = 'C:\\FSPL_automation\\automation_test_report';
+            $REPORT_DIR = "$REPORT_ROOT\\$DATE_FOLDER";
+
+            Write-Host 'Copying screenshots...';
+            New-Item -ItemType Directory -Path "$REPORT_DIR\\screenshots" -Force | Out-Null;
+            Copy-Item -Path 'cypress/ss/*' -Destination "$REPORT_DIR\\screenshots" -Recurse -Force -ErrorAction SilentlyContinue;
+        } else {
+            Write-Host 'No screenshot directory found.';
+        }
+
+  when: always
